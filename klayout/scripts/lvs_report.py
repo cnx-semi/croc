@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Summarise a KLayout LVS database (.lvsdb): per-circuit match status.
 
-Usage: python3 lvs_summary.py <file.lvsdb> [max_circuits_to_detail]
+Usage: python3 lvs_report.py <file.lvsdb> [max_circuits_to_detail]
 """
 import sys
 import collections
