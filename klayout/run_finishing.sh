@@ -212,8 +212,10 @@ fill_metal() {
     # $PDK_ROOT/$PDK/libs.tech/klayout/tech/macros/..., the ETH cockpit
     # convention. env.sh's PDK_ROOT points at the flat public mirror instead
     # (ihp13/pdk, no libs.tech/), so it must be overridden here or this call
-    # fails outside ETH systems. See doc/DRC_SIGNOFF.md.
-    run_cmd "PDK_ROOT=\"$CROC_ROOT/ihp13\" PDK=\"$CROC_PDK\" klayout -n $KLAYOUT_TECH -zz \
+    # fails outside ETH systems. Both come from the active PDK checkout
+    # (IHP_PDK_DIR from env.sh: the shared one if IHP_PDK_ROOT is set, else the
+    # repo's submodule). See doc/DRC_SIGNOFF.md.
+    run_cmd "PDK_ROOT=\"$(dirname "$IHP_PDK_DIR")\" PDK=\"$(basename "$IHP_PDK_DIR")\" klayout -n $KLAYOUT_TECH -zz \
         -r $KLAYOUT_PATH/tech/scripts/filler.py \
         -rd output_file=out/${PROJ_NAME}.metfilled.gds.gz \
         $fill_flags \
@@ -232,7 +234,7 @@ fill_activ() {
         fill_flags="-rd no_topmetal -rd no_metal"
     fi
     # Same PDK_ROOT/PDK override as fill_metal() above.
-    run_cmd "PDK_ROOT=\"$CROC_ROOT/ihp13\" PDK=\"$CROC_PDK\" klayout -n $KLAYOUT_TECH -zz \
+    run_cmd "PDK_ROOT=\"$(dirname "$IHP_PDK_DIR")\" PDK=\"$(basename "$IHP_PDK_DIR")\" klayout -n $KLAYOUT_TECH -zz \
         -r $KLAYOUT_PATH/tech/scripts/filler.py \
         -rd output_file=out/${PROJ_NAME}.vendorfilled.gds.gz \
         $fill_flags \

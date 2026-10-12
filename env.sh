@@ -35,8 +35,27 @@ export PDK_STDCELL_LIB_TT_FILE="sg13g2_stdcell_typ_1p20V_25C.lib"
 export PDK_STDCELL_LIB_FF_FILE="sg13g2_stdcell_fast_1p32V_m40C.lib"
 export CROC_TECHNOLOGY_VIEW=""
 
+# IHP PDK checkouts (KLayout DRC/LVS decks, filler macros, layer maps).
+# IHP_PDK_ROOT selects a shared location holding ihp-sg13cmos5l/ and
+# ihp-sg13g2/ side by side (the 5-layer PDK symlinks into its sibling
+# ../ihp-sg13g2, so both must live in the same directory). Unset, the repo's
+# own submodules are used. The design inputs (LEF, Liberty, GDS) are not read
+# from here: they come from the pinned mirror in ihp13/pdk, see below.
+if [[ -n "${IHP_PDK_ROOT:-}" ]]; then
+    IHP_CMOS5L_DIR="$IHP_PDK_ROOT/ihp-sg13cmos5l"
+    IHP_G2_DIR="$IHP_PDK_ROOT/ihp-sg13g2"
+    if [[ ! -d "$IHP_CMOS5L_DIR" || ! -d "$IHP_G2_DIR" ]]; then
+        echo "[ERROR][ENV] IHP_PDK_ROOT=$IHP_PDK_ROOT must contain ihp-sg13cmos5l/ and ihp-sg13g2/" >&2
+        return 1 2>/dev/null || exit 1
+    fi
+else
+    IHP_CMOS5L_DIR="$CROC_ROOT/ihp13/sg13cmos5l"
+    IHP_G2_DIR="$CROC_ROOT/ihp13/sg13g2/ihp-sg13g2"
+fi
+
 case "$CROC_PDK" in
     sg13cmos5l)
+        export IHP_PDK_DIR="$IHP_CMOS5L_DIR"
         export BENDER_PDK_ARGS="-D IHP_SG13CMOS5L=1"
         export PDK_TECH_LEF_FILE="sg13cmos5l_tech.lef"
         export PDK_IO_LEF_FILE="sg13cmos5l_io.lef"
@@ -45,9 +64,10 @@ case "$CROC_PDK" in
         export PDK_IO_LIB_FF_FILE="sg13cmos5l_io_fast_1p32V_3p6V_m40C.lib"
         export PDK_BONDPAD_LEF="bondpad5l_70x70.lef"
         export PDK_BONDPAD_GDS="bondpad5l_70x70.gds"
-        export KLAYOUT_PATH="$CROC_ROOT/ihp13/sg13cmos5l/libs.tech/klayout"
+        export KLAYOUT_PATH="$IHP_PDK_DIR/libs.tech/klayout"
         ;;
     sg13g2)
+        export IHP_PDK_DIR="$IHP_G2_DIR"
         export BENDER_PDK_ARGS=""
         export PDK_TECH_LEF_FILE="sg13g2_tech.lef"
         export PDK_IO_LEF_FILE="sg13g2_io.lef"
@@ -56,7 +76,7 @@ case "$CROC_PDK" in
         export PDK_IO_LIB_FF_FILE="sg13g2_io_fast_1p32V_3p6V_m40C.lib"
         export PDK_BONDPAD_LEF="bondpad_70x70.lef"
         export PDK_BONDPAD_GDS="bondpad_70x70.gds"
-        export KLAYOUT_PATH="$CROC_ROOT/ihp13/sg13g2/ihp-sg13g2/libs.tech/klayout"
+        export KLAYOUT_PATH="$IHP_PDK_DIR/libs.tech/klayout"
         ;;
     *)
         echo "[ERROR][ENV] Unknown CROC_PDK '$CROC_PDK'" >&2
@@ -119,6 +139,7 @@ fi
 echo "[INFO][ENV] PDK root: $PDK_ROOT"
 echo "[INFO][ENV] Croc PDK: $CROC_PDK"
 echo "[INFO][ENV] Active technology view: ${CROC_TECHNOLOGY_VIEW:-<none>}"
+echo "[INFO][ENV] IHP PDK checkout: $IHP_PDK_DIR"
 echo "[INFO][ENV] KLayout path: $KLAYOUT_PATH"
 echo "[INFO][ENV] Bender PDK args: ${BENDER_PDK_ARGS:-<none>}"
 echo "[INFO][ENV] Tech LEF: $PDK_TECH_LEF_FILE"
