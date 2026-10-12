@@ -53,6 +53,8 @@ else
     IHP_G2_DIR="$CROC_ROOT/ihp13/sg13g2/ihp-sg13g2"
 fi
 
+export IHP_CMOS5L_DIR IHP_G2_DIR
+
 case "$CROC_PDK" in
     sg13cmos5l)
         export IHP_PDK_DIR="$IHP_CMOS5L_DIR"

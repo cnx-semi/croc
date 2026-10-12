@@ -14,9 +14,12 @@ croc_root = os.environ["CROC_ROOT"]
 klayout_path = os.environ["KLAYOUT_PATH"]
 pdk = os.environ["CROC_PDK"]
 klayout_python = os.path.join(klayout_path, "python")
-shared_klayout_python = os.path.join(
-    croc_root, "ihp13", "sg13g2", "ihp-sg13g2", "libs.tech", "klayout", "python"
+# The PDK's sibling checkout (ihp-sg13g2): the shared one if env.sh selected it,
+# else the repository's own submodule.
+ihp_g2_dir = os.environ.get("IHP_G2_DIR") or os.path.join(
+    croc_root, "ihp13", "sg13g2", "ihp-sg13g2"
 )
+shared_klayout_python = os.path.join(ihp_g2_dir, "libs.tech", "klayout", "python")
 sys.path.extend(
     [
         klayout_python,
