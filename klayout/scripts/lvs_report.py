@@ -61,7 +61,8 @@ def main():
                 print(f"            {kind}: layout={name_of(p.first())}  schematic={name_of(p.second())}")
                 shown += 1
     if len(bad) > max_detail:
-        print(f"  ... {len(bad) - max_detail} more non-matching circuit pairs")
+        rest = ", ".join(sorted({(la if la != "-" else sc) for _, la, sc, _, _ in bad[max_detail:]}))
+        print(f"  ... {len(bad) - max_detail} more non-matching circuit pair(s): {rest}")
 
 
 if __name__ == "__main__":

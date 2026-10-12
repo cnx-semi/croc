@@ -299,14 +299,22 @@ if python3 "$SCRIPT_DIR/scripts/lvs_structural.py" "$RUN_DIR/${TOP_DESIGN}.layou
     STRUCT_OK=1
 fi
 
-if [[ "$KLAYOUT_TOP_OK" -eq 1 ]]; then
-    echo "[INFO][LVS] PASSED: layout and netlist match (KLayout)"
-elif [[ "$CIRCUITS_OK" -eq 1 && "$STRUCT_OK" -eq 1 ]]; then
-    echo "[INFO][LVS] PASSED: all circuit types match in KLayout and the top-level connectivity is"
-    echo "[INFO][LVS]         identical in the structural check; KLayout's own top-level matcher leaves"
-    echo "[INFO][LVS]         pairs of interchangeable cells unresolved (see doc/LVS.md)"
-else
-    echo "[ERROR][LVS] FAILED: see $RUN_DIR/lvs.log, $RUN_DIR/lvs-structural.txt and open" >&2
-    echo "[ERROR][LVS]         $RUN_DIR/lvs.lvsdb in KLayout (Tools > Netlist Browser)" >&2
-    exit 1
-fi
+VERDICT="$RUN_DIR/lvs-verdict.txt"
+{
+    cat "$RUN_DIR/lvs-report.txt"
+    echo "[INFO][LVS] KLayout circuit types: $([[ "$CIRCUITS_OK" -eq 1 ]] && echo all match || echo NOT all matching)"
+    echo "[INFO][LVS] KLayout top level:     $([[ "$KLAYOUT_TOP_OK" -eq 1 ]] && echo match || echo "pairs left unresolved")"
+    cat "$RUN_DIR/lvs-structural.txt"
+    if [[ "$KLAYOUT_TOP_OK" -eq 1 ]]; then
+        echo "[INFO][LVS] PASSED: layout and netlist match (KLayout)"
+    elif [[ "$CIRCUITS_OK" -eq 1 && "$STRUCT_OK" -eq 1 ]]; then
+        echo "[INFO][LVS] PASSED: all circuit types match in KLayout and the top-level connectivity is"
+        echo "[INFO][LVS]         identical in the structural check; KLayout's own top-level matcher leaves"
+        echo "[INFO][LVS]         pairs of interchangeable cells unresolved (see doc/LVS.md)"
+    else
+        echo "[ERROR][LVS] FAILED: see $RUN_DIR/lvs.log, $RUN_DIR/lvs-structural.txt and open"
+        echo "[ERROR][LVS]         $RUN_DIR/lvs.lvsdb in KLayout (Tools > Netlist Browser)"
+    fi
+} > "$VERDICT"
+tail -n +1 "$VERDICT" | grep -E "^\[(INFO|ERROR)\]\[LVS\]" | grep -v "^\[INFO\]\[LVS\] \(structural check: [0-9]\|KLayout:\)" || true
+grep -q "^\[INFO\]\[LVS\] PASSED" "$VERDICT" || exit 1
