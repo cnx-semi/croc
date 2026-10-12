@@ -19,6 +19,26 @@ The viewer helper is `croc-view` — run `croc-view list` to see every target.
 
 ---
 
+## Which PDK is used
+
+Two different things, from two different places:
+
+| What | Where it comes from |
+| --- | --- |
+| **Design inputs**: LEF, Liberty, Verilog, GDS of cells, IO, SRAM | `ihp13/pdk/`, a pinned mirror in this repo (revisions and SHA-256 digests in `ihp13/pdk/pdk_manifest.csv`; IHP GDS via `scripts/download_gds.sh`) |
+| **Checking and fill decks**: KLayout DRC / LVS rules, filler macros, layer maps | an IHP PDK checkout, see below |
+
+The checkout is chosen in `env.sh`. If `IHP_PDK_ROOT` is set, it must be a
+directory holding `ihp-sg13cmos5l/` and `ihp-sg13g2/` side by side; the
+5-layer PDK symlinks into its sibling, so both are needed. On this workstation
+`/opt/tools/env.sh` sets `IHP_PDK_ROOT=/opt/tools/pdk`, the one copy shared by
+every IHP project here (IHP-Open-PDK `c1d6f49e`, ihp-sg13cmos5l `43ac6216`).
+If `IHP_PDK_ROOT` is unset, the repo's own git submodules (`ihp13/sg13cmos5l`,
+`ihp13/sg13g2`) are used, which is what CI and a fresh clone get. Both are at
+the same commits; `env.sh` prints which one is active (`IHP PDK checkout:`).
+
+---
+
 ## The flow in one picture
 
 ```
@@ -251,9 +271,35 @@ RECOMMENDED-only `Pad.*` findings (bond-pad exit length / spacing) remains by
 design — they come from the vendor IO-cell pin geometry and cannot be changed
 by place-and-route; see DRC_SIGNOFF.md.
 
-**DRC is not the whole signoff.** This flow writes an LVS netlist
-(`openroad/out/croc_lvs.v`) but does not run LVS; a foundry submission needs
-it. See "Is this GDS ready to submit?" in DRC_SIGNOFF.md.
+**DRC is not the whole signoff.** Run LVS too (step 6 below); a foundry
+submission needs both. See "Is this GDS ready to submit?" in DRC_SIGNOFF.md.
+
+## 6. LVS: is it the circuit we meant?
+
+**What it does:** extracts the devices and connections from the final GDS and
+compares them with the netlist OpenROAD routed. DRC passes on a layout that is
+the wrong circuit; LVS is what catches that (it is how an unpowered SRAM was
+found). Standard cells are compared transistor by transistor; IO cells, SRAM
+and bond pads are compared at their pins. Details and the reasoning:
+**[doc/LVS.md](LVS.md)**.
+
+```sh
+cd klayout
+./run_lvs.sh                   # ~15 min, reads out/croc.filled.gds.gz
+```
+
+**See the result**
+
+```sh
+croc-view lvs-log              # the verdict
+croc-view lvs                  # KLayout + Tools > Netlist Browser for mismatches
+```
+
+**Good sign:** `PASSED` and `structural check: identical`. (KLayout's own
+top-level matcher leaves some pairs unresolved on this design; LVS.md
+explains why and what covers it.)
+
+---
 
 ---
 
@@ -268,6 +314,7 @@ it. See "Is this GDS ready to submit?" in DRC_SIGNOFF.md.
 | Minimal DRC (CI) | ~13 min |
 | Fill (vendor + supplemental) | ~25 min |
 | **Full signoff DRC** | **~2 h** |
+| **LVS** | **~15 min** (run beside the full DRC) |
 
 **Don't kill detailed routing when it sits at "Number of violations = 2" for
 an hour.** It converges 26606 -> ... -> 4 -> 2, plateaus for ~10 iterations,

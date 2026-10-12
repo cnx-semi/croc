@@ -252,7 +252,9 @@ stock.
 
 ## Is this GDS ready to submit?
 
-**Not yet. The DRC side is in good shape; LVS has not been run.**
+**All three of IHP's physical-verification steps have a result; whether the
+`Pad.*` recommended findings are acceptable is a question for the shuttle
+organiser.**
 
 IHP's submission guidance for its Open-Silicon-MPW runs
 ([slides, 19 March 2026](https://ieee-cas.org/files/ieeecass/slides/sumbissiontoopen-silicon-mpw-ihp.pdf),
@@ -262,9 +264,9 @@ PDK's own runners:
 
 | IHP step | What it runs | Status of this layout |
 | --- | --- | --- |
-| Minimal pre-check DRC | `run_drc.py --precheck_drc --no_offgrid --no_angle --disable_extra_rules --no_recommended` | **Passed, 0 violations**, run with exactly these flags on `croc.filled.gds.gz` (64 min with 6 workers). croc's `run_drc.sh --minimal`, which uses similar but not identical flags, also passes. |
+| Minimal pre-check DRC | `run_drc.py --precheck_drc --no_offgrid --no_angle --disable_extra_rules --no_recommended` | **Passed, 0 violations**, run with exactly these flags on `croc.filled.gds.gz` (71 min with 6 workers), on the final layout including the SRAM power fix. croc's `run_drc.sh --minimal`, which uses similar but not identical flags, also passes. |
 | Regular DRC | `run_drc.py` with all rules, recommended ones included | 873 findings, every one a recommended `Pad.*` rule (this document) |
-| Regular LVS | `run_lvs.py --layout=<gds> --netlist=<cdl>` | **Not run.** `05_finishing.tcl` writes `openroad/out/croc_lvs.v`, but no script in this repo runs LVS |
+| Regular LVS | `run_lvs.py --layout=<gds> --netlist=<cdl>` | **Passed**, with a caveat: 65 of 65 circuit types match in KLayout and a structural cross-check finds the standard-cell connectivity identical, but KLayout's own top-level matcher leaves about 1% of pairs unresolved (interchangeable cells). `klayout/run_lvs.sh`; details in [LVS.md](LVS.md). |
 
 What that means for the 873 recommended findings:
 
@@ -277,10 +279,18 @@ What that means for the 873 recommended findings:
   anyway (see the previous section): closing them means different IO / bond pad
   cells, not more place-and-route.
 
-Other things a submission needs that are outside this document: the LVS run
-above, the run's metadata (PDK commit, process, top cell name, seal ring size,
-paths to the final GDS and the LVS netlist) and an open-source licence. Other
-routes to silicon have their own acceptance checks.
+Two things to know about the LVS result before relying on it. IHP's guidance
+runs the PDK's `run_lvs.py` against a schematic netlist; this flow adds a
+wrapper (macros compared by pin name, fill and via cells left out of the view)
+because the deck does not finish on this design otherwise, and the verdict
+rests on a second check where KLayout's matcher stops. Both are explained in
+[LVS.md](LVS.md); if the shuttle runs its own LVS with the deck as shipped,
+expect that run to need the same help.
+
+Other things a submission needs that are outside this document: the run's
+metadata (PDK commit, process, top cell name, seal ring size, paths to the final
+GDS and the LVS netlist) and an open-source licence. Other routes to silicon
+have their own acceptance checks.
 
 ## If you touch the flow
 
