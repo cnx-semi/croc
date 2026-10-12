@@ -2,3 +2,5 @@
 out
 __pycache__/
 drc-*/
+lvs-run/
+ihp-precheck-run/
