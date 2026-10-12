@@ -262,7 +262,7 @@ PDK's own runners:
 
 | IHP step | What it runs | Status of this layout |
 | --- | --- | --- |
-| Minimal pre-check DRC | `run_drc.py --precheck_drc --no_offgrid --no_angle --disable_extra_rules --no_recommended` | croc's `run_drc.sh --minimal` (similar, not identical flags) passes. Run IHP's exact command on the filled GDS before submitting. |
+| Minimal pre-check DRC | `run_drc.py --precheck_drc --no_offgrid --no_angle --disable_extra_rules --no_recommended` | **Passed, 0 violations**, run with exactly these flags on `croc.filled.gds.gz` (64 min with 6 workers). croc's `run_drc.sh --minimal`, which uses similar but not identical flags, also passes. |
 | Regular DRC | `run_drc.py` with all rules, recommended ones included | 873 findings, every one a recommended `Pad.*` rule (this document) |
 | Regular LVS | `run_lvs.py --layout=<gds> --netlist=<cdl>` | **Not run.** `05_finishing.tcl` writes `openroad/out/croc_lvs.v`, but no script in this repo runs LVS |
 
