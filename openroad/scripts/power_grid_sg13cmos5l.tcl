@@ -91,9 +91,18 @@ add_pdn_stripe -grid {core_grid} -layer {TopMetal1} -width $tpg1Width -spacing $
 add_pdn_stripe -grid {core_grid} -layer {Metal4} -width $pg4Width -spacing $pg4Spacing \
     -pitch $pg4Pitch -offset $pg4Offset -extend_to_core_ring -starts_with POWER -snap_to_grid
 
-# Global TopMetal1 stripes drop directly to the SRAM Metal4 power pins.
 add_pdn_connect -grid {core_grid} -layers {TopMetal1 Metal4}
 add_pdn_connect -grid {core_grid} -layers {Metal4 Metal1}
+
+# The TopMetal1 stripes above cross the SRAM's Metal4 supply pins, but the core
+# grid only connects its own shapes: without a macro grid pdngen places no via
+# there and the SRAM is left unpowered (check_power_grid: "Unconnected instance
+# ...i_cut/VDD!" and "Unconnected node ... Metal4"; LVS: SRAM supply pins open).
+# The macro grid makes pdngen see the macro's pins and drop vias to the stripes,
+# as power_grid_sg13g2.tcl does for the same macro.
+define_pdn_grid -macro -name sram_grid -cells {RM_IHPSG13_1P_512x32_c2_bm_bist} \
+    -grid_over_pg_pins -starts_with POWER
+add_pdn_connect -grid {sram_grid} -layers {Metal4 TopMetal1}
 
 ##########################################################################
 # Generate

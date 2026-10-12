@@ -45,6 +45,15 @@ filler_placement $stdfill
 utl::report "Global connect"
 global_connect
 
+utl::report "Check power grid connectivity"
+# Non-fatal on purpose: the outputs are still written for inspection, but a
+# failure prints "[ERROR PSM-0069]" into the log, which the CI log scan fails on.
+# A macro whose supply pins never reach the grid passes every DRC check; this
+# (and LVS) is what sees it. Takes about a minute.
+foreach pg_net {VDD VSS} {
+    catch {check_power_grid -net $pg_net}
+}
+
 save_checkpoint 05_${proj_name}.final
 report_image "05_${proj_name}.final" true true false true
 report_metrics "05_${proj_name}.final"
