@@ -73,6 +73,22 @@ fi
 source "$CROC_ROOT/env.sh"
 
 GDS_PATH="$SCRIPT_DIR/out/${PROJ_NAME}.sealed.gds.gz"
+if [[ "$MODE" == "full" ]]; then
+    # --full is the signoff check: density/FEOL/BEOL rules need fill, which
+    # only exists in the filled GDS. Checking the sealed (unfilled) GDS here
+    # would report the MxFil.h density violations run_finishing.sh's fill
+    # step already fixes -- see doc/DRC_SIGNOFF.md. --minimal deliberately
+    # disables density (`--no_density`) and is meant for fast iteration
+    # before fill exists, so it keeps checking the sealed GDS unchanged.
+    FILLED_GDS="$SCRIPT_DIR/out/${PROJ_NAME}.filled.gds.gz"
+    if [[ -f "$FILLED_GDS" ]]; then
+        GDS_PATH="$FILLED_GDS"
+    elif [[ "$DRYRUN" -eq 0 ]]; then
+        echo "[WARNING][KLayout] $FILLED_GDS not found; falling back to the" \
+             "unfilled sealed GDS. Run run_finishing.sh --fill-metal" \
+             "--fill-activ first for a real signoff check." >&2
+    fi
+fi
 TOP_CELL="${TOP_DESIGN}_sealed"
 RUN_DIR="$SCRIPT_DIR/drc-$MODE"
 DRC_RUNNER="$KLAYOUT_PATH/tech/drc/run_drc.py"

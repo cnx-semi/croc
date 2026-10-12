@@ -208,7 +208,12 @@ fill_metal() {
     else
         fill_flags="-rd no_topmetal -rd no_activ"
     fi
-    run_cmd "klayout -n $KLAYOUT_TECH -zz \
+    # PDK_ROOT/PDK: the filler macro builds its own path as
+    # $PDK_ROOT/$PDK/libs.tech/klayout/tech/macros/..., the ETH cockpit
+    # convention. env.sh's PDK_ROOT points at the flat public mirror instead
+    # (ihp13/pdk, no libs.tech/), so it must be overridden here or this call
+    # fails outside ETH systems. See doc/DRC_SIGNOFF.md.
+    run_cmd "PDK_ROOT=\"$CROC_ROOT/ihp13\" PDK=\"$CROC_PDK\" klayout -n $KLAYOUT_TECH -zz \
         -r $KLAYOUT_PATH/tech/scripts/filler.py \
         -rd output_file=out/${PROJ_NAME}.metfilled.gds.gz \
         $fill_flags \
@@ -226,11 +231,23 @@ fill_activ() {
     else
         fill_flags="-rd no_topmetal -rd no_metal"
     fi
-    run_cmd "klayout -n $KLAYOUT_TECH -zz \
+    # Same PDK_ROOT/PDK override as fill_metal() above.
+    run_cmd "PDK_ROOT=\"$CROC_ROOT/ihp13\" PDK=\"$CROC_PDK\" klayout -n $KLAYOUT_TECH -zz \
         -r $KLAYOUT_PATH/tech/scripts/filler.py \
-        -rd output_file=out/${PROJ_NAME}.filled.gds.gz \
+        -rd output_file=out/${PROJ_NAME}.vendorfilled.gds.gz \
         $fill_flags \
         out/${PROJ_NAME}.metfilled.gds.gz"
+
+    # Supplemental fill: the vendor filler above does exactly one grid-aligned
+    # pass per layer, which leaves signoff-DRC density gaps in routing-dense
+    # areas (IHP-Open-PDK issue #438, open upstream). This closes them with
+    # additional offset passes on M1/M2/M3 -- the layers that actually need
+    # it for this design -- so that out/${PROJ_NAME}.filled.gds.gz is already
+    # the signoff-ready file with no extra step. Full writeup, verification,
+    # and what's still NOT closeable this way: doc/DRC_SIGNOFF.md.
+    run_cmd "echo [INFO][KLayout] Supplemental M1/M2/M3 fill -- closes vendor single-pass density gaps"
+    run_cmd "python3 scripts/extra_metal_fill.py \
+        out/${PROJ_NAME}.vendorfilled.gds.gz out/${PROJ_NAME}.filled.gds.gz 8,10,30"
 }
 
 
